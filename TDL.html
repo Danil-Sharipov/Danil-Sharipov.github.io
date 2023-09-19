@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        #container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #todoInput {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        #addButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #addButton:hover {
+            background-color: #0056b3;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+
+        li.completed {
+            background-color: #d4edda;
+        }
+
+        .action-button {
+            padding: 6px 12px;
+            margin-left: 10px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .action-button:hover {
+            background-color: #c82333;
+        }
+
+        .selected {
+            background-color: #f0f0f0;
+        }
+
+        .highlighted {
+            background-color: yellow;
+            font-weight: bold;
+        }
+        .complete-button {
+    padding: 4px;
+    position: absolute;
+    right: 350px;
+    background-color: #28a745; /* Цвет кнопки (зеленый) */
+    color: #fff;
+    border: none;
+    border-radius: 50%; /* Радиус скругления для создания круглой формы */
+    cursor: pointer;
+    font-size: 24px; /* Размер шрифта */
+    width: 20px; /* Ширина кнопки */
+    height: 20px; /* Высота кнопки */
+    line-height: 1; /* Распределение текста по вертикали */
+}
+
+.complete-button:hover {
+    background-color: #218838; /* Цвет кнопки при наведении */
+}
+.delete-button {
+    padding: 3px;
+    position: absolute;
+    right: 315px;
+    color: #fff;
+    border: none;
+    border-radius: 50%; /* Радиус скругления для создания круглой формы */
+    cursor: pointer;
+    font-size: 20px; /* Размер шрифта для крестика */
+    width: 25px; /* Ширина кнопки */
+    height: 20px; /* Высота кнопки */
+    line-height: 1; /* Распределение текста по вертикали */
+}
+
+.delete-button:hover {
+    background-color: #c82333; /* Цвет кнопки при наведении */
+}
+
+    </style>
+</head>
+<body><div id="container">
+        <h1>Todo List</h1>
+        <div class="input-container">
+            <input type="text" id="todoInput" placeholder="Добавить новый элемент">
+            <button id="addButton">Добавить</button>
+        </div>
+        <ul id="todoList">
+        </ul>
+        <div class="button-container">
+            <button class="action-button" id="highlightEvenButton">Выделить четные</button>
+            <button class="action-button" id="highlightOddButton">Выделить нечетные</button>
+            <button class="action-button" id="deleteLastButton">Удалить последний</button>
+            <button class="action-button" id="deleteFirstButton">Удалить первый</button>
+        </div>
+    </div>
+    <script>
+        
+        function saveTodoList() {
+            const todoList = document.getElementById("todoList");
+            const taskTexts = Array.from(todoList.children).map(item => item.textContent);
+            localStorage.setItem("todoList", JSON.stringify(taskTexts));
+        }
+
+        function loadTodoList() {
+            const todoList = document.getElementById("todoList");
+            const savedList = JSON.parse(localStorage.getItem("todoList"));
+
+            if (savedList) {
+                todoList.innerHTML = ""; // Очищаем текущий список задач
+
+                savedList.forEach((taskText) => {
+                    const listItem = document.createElement("li");
+                    const taskTextWithoutCompleted = taskText.replace("Выполнено", "").replace("✓","").replace("✖️","");
+listItem.textContent = taskTextWithoutCompleted;
+
+                    const completeButton = document.createElement("div");
+    completeButton.textContent = "✓";
+    completeButton.classList.add("complete-button");
+    completeButton.addEventListener("click", () => {
+        completeItem(listItem); // Передаем текущий элемент в функцию completeItem
+    });
+    const deleteIcon = document.createElement("div");
+deleteIcon.textContent = "✖️"; // Вставляем крестик
+
+deleteIcon.classList.add("delete-button");
+deleteIcon.addEventListener("click", () => {
+    deleteItem(listItem); // Передаем текущий элемент в функцию deleteItem
+});
+
+listItem.appendChild(deleteIcon);
+
+                    listItem.appendChild(completeButton);
+                    todoList.appendChild(listItem);
+                });
+            }
+        }
+
+        
+        function addItem() {
+            const task = document.getElementById("todoInput").value;
+            const todoList = document.getElementById("todoList");
+
+            if (task.trim() === "") {
+                alert("Пожалуйста, введите задачу.");
+                return;
+            }
+
+            const listItem = document.createElement("li");
+            listItem.textContent = task;
+
+            
+            const completeButton = document.createElement("div");
+    completeButton.textContent = "✓";
+    completeButton.classList.add("complete-button");
+    completeButton.addEventListener("click", () => {
+        completeItem(listItem); // Передаем текущий элемент в функцию completeItem
+    });
+    const deleteIcon = document.createElement("div");
+deleteIcon.textContent = "✖️"; // Вставляем крестик
+
+
+deleteIcon.classList.add("delete-button");
+deleteIcon.addEventListener("click", () => {
+    deleteItem(listItem); 
+});
+
+listItem.appendChild(deleteIcon);
+            listItem.appendChild(completeButton);
+            todoList.appendChild(listItem);
+
+            saveTodoList(); // Сохраняем список задач после добавления новой задачи
+        }
+
+        
+        function highlightEven() {
+            const listItems = document.querySelectorAll("#todoList li");
+            listItems.forEach((item, index) => {
+                if (index % 2 === 1) {
+                    item.classList.toggle("highlighted");
+                } else {
+                    item.classList.remove("highlighted");
+                }
+            });
+        }
+
+        
+        function highlightOdd() {
+            const listItems = document.querySelectorAll("#todoList li");
+            listItems.forEach((item, index) => {
+                if (index % 2 !== 1) {
+                    item.classList.toggle("highlighted");
+                } else {
+                    item.classList.remove("highlighted");
+                }
+            });
+        }
+
+        
+        function deleteFirst() {
+            const todoList = document.getElementById("todoList");
+            const firstItem = todoList.firstElementChild;
+            if (firstItem) {
+                todoList.removeChild(firstItem);
+                saveTodoList(); // Сохран
+                                loadTodoList(); // Загружаем обновленный список задач
+            }
+        }
+
+        
+        function deleteLast() {
+            const todoList = document.getElementById("todoList");
+            const lastItem = todoList.lastElementChild;
+            if (lastItem) {
+                todoList.removeChild(lastItem);
+                saveTodoList(); // Сохраняем список после удаления последнего элемента
+                loadTodoList(); // Загружаем обновленный список задач
+            }
+        }
+
+        
+        function completeItem(item) {
+            item.classList.toggle("completed");
+            saveTodoList(); // Сохраняем список после завершения задачи
+
+
+        }
+        
+window.addEventListener("unload", function() {
+    
+    removeCompletedTasksOnUnload();
+});
+
+function removeCompletedTasksOnUnload() {
+    const todoList = document.getElementById("todoList");
+    const completedTasks = todoList.querySelectorAll("li.completed");
+    
+    if (completedTasks.length > 0) {
+        completedTasks.forEach((task) => {
+            todoList.removeChild(task);
+            saveTodoList()
+        });
+    }
+}
+
+
+        
+        function deleteItem(item) {
+    const todoList = document.getElementById("todoList");
+    todoList.removeChild(item);
+    saveTodoList(); // Сохраняем список после удаления выбранного элемента
+}
+
+        
+        document.getElementById("addButton").addEventListener("click", () => {
+            addItem();
+            todoInput.value = "";
+        });
+
+        document.getElementById("highlightEvenButton").addEventListener("click", () => {
+            highlightEven();
+        });
+
+        document.getElementById("highlightOddButton").addEventListener("click", () => {
+            highlightOdd();
+        });
+
+        document.getElementById("deleteFirstButton").addEventListener("click", () => {
+            deleteFirst();
+        });
+
+        document.getElementById("deleteLastButton").addEventListener("click", () => {
+            deleteLast();
+        });
+
+        
+        loadTodoList();
+
+
+        
+        const todoInput = document.getElementById("todoInput");
+
+todoInput.addEventListener("keyup", function(event) {
+    // Проверяем, была ли нажата клавиша Enter (код 13)
+    if (event.keyCode === 13) {
+        addItem(); // Вызываем функцию addItem()
+        todoInput.value = "";
+    }
+});
+    </script>
+</body>
+</html>
